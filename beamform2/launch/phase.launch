@@ -1,0 +1,9 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="phase" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/rosjack_config.yaml" />
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+    <param name="min_phase" value="20.0" />
+    <param name="mag_mult" value="0.1" />
+    <param name="mag_threshold" value="0.0001" />
+  </node>
+</launch>

@@ -1,0 +1,13 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="mcra" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/rosjack_config.yaml" />
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+    <param name="alphaS" value="0.95" />
+    <param name="alphaD" value="0.95" />
+    <param name="alphaD2" value="0.98" />
+    <param name="delta" value="0.001" />
+    <param name="L" value="300" />
+    <param name="out_amp" value="1.0" />
+    <param name="out_only_noise" value="false" />
+  </node>
+</launch>

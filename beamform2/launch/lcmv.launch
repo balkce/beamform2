@@ -1,0 +1,13 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="lcmv" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/rosjack_config.yaml" />
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+    
+    <param name="past_windows" value="10" />
+    <param name="freq_mag_threshold" value="0.001" />
+    <param name="freq_max" value="16000.0" />
+    <param name="freq_min" value="100.0" />
+    <param name="out_amp" value="1.0" />
+    <param name="interf_angle_threshold" value="1.0" />
+  </node>
+</launch>

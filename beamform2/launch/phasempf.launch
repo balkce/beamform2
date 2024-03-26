@@ -1,0 +1,23 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="phasempf" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/rosjack_config.yaml" />
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+
+    <param name="min_phase" value="30.0" />
+    <param name="min_mag" value="0.05" />
+    <param name="smooth_size" value="3" />
+    <param name="MCRA_alphaS" value="0.95" />
+    <param name="MCRA_alphaD" value="0.95" />
+    <param name="MCRA_alphaD2" value="0.98" />
+    <param name="MCRA_delta" value="0.001" />
+    <param name="MCRA_L" value="50" />
+    <param name="MPF_alphaS" value="0.7" />
+    <param name="MPF_eta" value="0.3" />
+    <param name="MPF_rev_gamma" value="0.9" />
+    <param name="MPF_rev_delta" value="1.0" />
+    <param name="out_amp" value="2.5" />
+    <param name="noise_floor" value="0.001" />
+    <param name="out_only_noise" value="false" />
+    <param name="out_only_mcra" value="false" />
+  </node>
+</launch>

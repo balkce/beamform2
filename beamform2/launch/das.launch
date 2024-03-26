@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="das" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+    <param from="$(find-pkg-share beamform2)/config/rosjack_config.yaml" />
+  </node>
+</launch>

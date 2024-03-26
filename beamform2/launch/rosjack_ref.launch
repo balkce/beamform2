@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="rosjack_ref" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+    <param from="$(find-pkg-share beamform2)/config/rosjack_config.yaml" />
+    <param name="output_type" value="0" />
+  </node>
+</launch>

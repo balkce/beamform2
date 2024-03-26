@@ -1,0 +1,13 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="gsc" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/rosjack_config.yaml" />
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+    
+    <param name="use_vad" value="false" />
+    <param name="vad_threshold" value="0.01" />
+    <param name="mu0"    value="0.000001" />
+    <param name="mu_max" value="0.00001" />
+    <param name="filter_size" value="128" />
+    <param name="write_mu" value="false" />
+  </node>
+</launch>
