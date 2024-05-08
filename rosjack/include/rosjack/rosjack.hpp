@@ -60,7 +60,6 @@ extern unsigned int samplerate_circbuff_w;
 extern unsigned int samplerate_circbuff_r;
 extern SRC_STATE * samplerate_conv;
 extern SRC_DATA samplerate_data;
-extern int rosjack_window_size_sampled;
 
 extern const char *ROSJACK_OUT_OUTPUT_TYPES[]; 
 
@@ -90,7 +89,7 @@ extern unsigned int rosjack_sample_rate;
 void rosjack_handle_params(std::shared_ptr<rclcpp::Node> rosjack_node);
 void jack_shutdown (void *arg);
 int jack_xrun (void *arg);
-void rosjack_roscallback(const jack_msgs::msg::JackAudio msg);
+void rosjack_roscallback(const jack_msgs::msg::JackAudio::SharedPtr msg);
 int rosjack_create (int rosjack_type, std::shared_ptr<rclcpp::Node> rosjack_node, const char *topic_name, const char *client_name, int input_number, int (*callback_function)(jack_nframes_t, void*));
 void close_rosjack();
 void siginthandler(int sig);

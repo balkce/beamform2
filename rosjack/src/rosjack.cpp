@@ -26,7 +26,6 @@ unsigned int samplerate_circbuff_w=0;
 unsigned int samplerate_circbuff_r=0;
 SRC_STATE * samplerate_conv;
 SRC_DATA samplerate_data;
-int rosjack_window_size_sampled;
 
 const char *ROSJACK_OUT_OUTPUT_TYPES[] = {
   "ROSJACK_OUT_BOTH",
@@ -157,7 +156,7 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
   /* JACK initialization */
   int i;
   jack_num_inputs = input_number;
-  printf ("Connecting to Jack Server...\n");
+  RCLCPP_INFO(rosjack_node->get_logger(),"Connecting to Jack Server...");
   jack_options_t options = JackNoStartServer;
   jack_status_t status;
   
@@ -165,9 +164,9 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
   jack_client = jack_client_open (client_name, options, &status);
   if (jack_client == NULL){
     /* if connection failed, say why */
-    printf ("jack_client_open() failed, status = 0x%2.0x\n", status);
+    RCLCPP_ERROR(rosjack_node->get_logger(),"jack_client_open() failed, status = 0x%2.0x", status);
     if (status & JackServerFailed) {
-      printf ("Unable to connect to JACK server.\n");
+      RCLCPP_ERROR(rosjack_node->get_logger(),"Unable to connect to JACK server.");
     }
     return 1;
   }
@@ -175,7 +174,7 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
   /* if connection was successful, check if the name we proposed is not in use */
   if (status & JackNameNotUnique){
     client_name = jack_get_client_name(jack_client);
-    printf ("Warning: other agent with our name is running, `%s' has been assigned to us.\n", client_name);
+    RCLCPP_WARN(rosjack_node->get_logger(),"Warning: other agent with our name is running, `%s' has been assigned to us.", client_name);
   }
   
   /* tell the JACK server to call 'jack_callback()' whenever there is work to be done. */
@@ -192,10 +191,10 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
   
   /* display the current sample rate. */
   rosjack_window_size = jack_get_buffer_size (jack_client);
-  printf ("JACK window size: %d\n", rosjack_window_size);
+  RCLCPP_INFO(rosjack_node->get_logger(),"JACK window size: %d", rosjack_window_size);
   rosjack_sample_rate = jack_get_sample_rate (jack_client);
   stamp_factor = (double)1000000000/rosjack_sample_rate;
-  printf ("JACK sample rate: %d\n", rosjack_sample_rate);
+  RCLCPP_INFO(rosjack_node->get_logger(),"JACK sample rate: %d", rosjack_sample_rate);
   if(!ros_output_sample_rate_defined)
     ros_output_sample_rate = rosjack_sample_rate;
   
@@ -209,34 +208,36 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
     
     /* check that the port were created succesfully */
     if ((jack_input_port[i] == NULL)) {
-      printf("Could not create input port %s. Have we reached the maximum amount of JACK input ports?\n",input_port_name);
+      RCLCPP_ERROR(rosjack_node->get_logger(),"Could not create input port %s. Have we reached the maximum amount of JACK input ports?",input_port_name);
       return 1;
     }
   }
   
   jack_output_port = jack_port_register (jack_client, "output", JACK_DEFAULT_AUDIO_TYPE,JackPortIsOutput, 0);
   if ((jack_output_port == NULL)) {
-    printf("Could not create output port. Have we reached the maximum amount of JACK output ports?\n");
+    RCLCPP_ERROR(rosjack_node->get_logger(),"Could not create output port. Have we reached the maximum amount of JACK output ports?");
     return 1;
   }
   
   if(ros_output_sample_rate != rosjack_sample_rate){
-    printf("Creating the sample rate converter for ROS output...\n");
+    RCLCPP_INFO(rosjack_node->get_logger(),"Creating the sample rate converter for ROS output...");
     int samplerate_error;
     samplerate_conv = src_new (DEFAULT_CONVERTER,1,&samplerate_error);
     if(samplerate_conv == NULL){
-      printf("%s\n",src_strerror (samplerate_error));
+      RCLCPP_ERROR(rosjack_node->get_logger(),"%s",src_strerror (samplerate_error));
       exit(1);
     }
 
-    samplerate_data.src_ratio = (double)(((double)ros_output_sample_rate)/((double)rosjack_sample_rate));
-    printf("Using ROS Sample Rate ratio: %f\n", samplerate_data.src_ratio);
+    if(rosjack_type == ROSJACK_WRITE){
+      samplerate_data.src_ratio = (double)(((double)rosjack_sample_rate)/((double)ros_output_sample_rate));
+    }else{
+      samplerate_data.src_ratio = (double)(((double)ros_output_sample_rate)/((double)rosjack_sample_rate));
+    }
+    RCLCPP_INFO(rosjack_node->get_logger(),"Using ROS Sample Rate ratio: %f", samplerate_data.src_ratio);
     if (src_is_valid_ratio (samplerate_data.src_ratio) == 0){
-      printf ("Error : ROS Output Sample Rate change out of valid range. Using JACK sample rate as output\n");
+      RCLCPP_WARN(rosjack_node->get_logger(),"Warning: ROS Output Sample Rate change out of valid range. Using JACK sample rate as output.");
       ros_output_sample_rate = rosjack_sample_rate;
     }
-    rosjack_window_size_sampled = rosjack_window_size * samplerate_data.src_ratio;
-    
     samplerate_circbuff_size = rosjack_window_size*50;
     samplerate_circbuff = (rosjack_data *)malloc(samplerate_circbuff_size*sizeof(rosjack_data));
     
@@ -247,13 +248,13 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
     samplerate_data.output_frames = rosjack_window_size;
     samplerate_data.end_of_input = 0;
   }else{
-    printf("ROS Output Sample Rate and JACK sample rate are the same. Not creating sample rate converter.\n");
+    RCLCPP_INFO(rosjack_node->get_logger(),"ROS Output Sample Rate and JACK sample rate are the same. Not creating sample rate converter.");
   }
   
   if(write_file){
-    printf("Writing ROS output in: %s\n",audio_file_path);
+    RCLCPP_INFO(rosjack_node->get_logger(),"Writing ROS output in: %s",audio_file_path);
     
-    if(ros_output_sample_rate == rosjack_sample_rate || output_type == ROSJACK_OUT_JACK)
+    if(ros_output_sample_rate == rosjack_sample_rate || output_type != ROSJACK_OUT_JACK)
       audio_info.samplerate = rosjack_sample_rate;
     else
       audio_info.samplerate = ros_output_sample_rate;
@@ -261,31 +262,31 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
     audio_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
     audio_file = sf_open (audio_file_path,SFM_WRITE,&audio_info);
     if(audio_file == NULL){
-      printf("WARNING: Could not open file for writing output, with error: %s\n",sf_strerror(NULL));
-      printf("WARNING: Continuing without file output.\n");
+      RCLCPP_WARN(rosjack_node->get_logger(),"WARNING: Could not open file for writing output, with error: %s",sf_strerror(NULL));
+      RCLCPP_WARN(rosjack_node->get_logger(),"WARNING: Continuing without file output.");
       write_file = false;
     }else{
-      printf("Audio file info:\n");
-      printf("\tSample Rate: %d\n",audio_info.samplerate);
-      printf("\tChannels: %d\n",audio_info.channels);
-      printf("\tFormat: WAV, PCM 16-bit\n");
+      RCLCPP_INFO(rosjack_node->get_logger(),"Audio file info:");
+      RCLCPP_INFO(rosjack_node->get_logger(),"\tSample Rate: %d",audio_info.samplerate);
+      RCLCPP_INFO(rosjack_node->get_logger(),"\tChannels: %d",audio_info.channels);
+      RCLCPP_INFO(rosjack_node->get_logger(),"\tFormat: WAV, PCM 16-bit");
       write_file_buffer = (float *)malloc(rosjack_window_size*sizeof(float));
     }
   }
   
   if(rosjack_type == ROSJACK_WRITE){
-    ros2jack_buffer_size = jack_get_buffer_size (jack_client)*50;
+    ros2jack_buffer_size = jack_get_buffer_size (jack_client)*150;
     ros2jack_buffer = (rosjack_data *)malloc(sizeof(rosjack_data)*ros2jack_buffer_size);
   }
   
   /* Tell the JACK server that we are ready to roll.
      Our jack_callback() callback will start running now. */
   if (jack_activate (jack_client)) {
-    printf ("Cannot activate JACK agent.");
+    RCLCPP_ERROR(rosjack_node->get_logger(),"Cannot activate JACK agent.");
     return 1;
   }
   
-  printf ("Agent activated.\n");
+  RCLCPP_INFO(rosjack_node->get_logger(),"Agent activated.");
   
   /* Connect the ports.  You can't do this before the client is
    * activated, because we can't make connections to clients
@@ -296,19 +297,19 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
    */
   const char **serverports_names;
   if(auto_connect){
-    printf ("Connecting input ports... ");
+    RCLCPP_INFO(rosjack_node->get_logger(),"Connecting input ports... ");
      
     /* Assign our ports to a server ports*/
     // Find possible output server port names
     serverports_names = jack_get_ports (jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsOutput);
     if (serverports_names == NULL) {
-      printf("No available physical capture (server output) ports.\n");
+      RCLCPP_ERROR(rosjack_node->get_logger(),"No available physical capture (server output) ports.");
       return 1;
     }
     // Connect the first available to our input port
     for(i = 0; i < jack_num_inputs; i++){
       if (jack_connect (jack_client, serverports_names[i], jack_port_name (jack_input_port[i]))) {
-        printf("Cannot connect input port %s.\n",jack_port_name (jack_input_port[i]));
+        RCLCPP_WARN(rosjack_node->get_logger(),"Cannot connect input port %s.",jack_port_name (jack_input_port[i]));
         RCLCPP_WARN(rosjack_node->get_logger(),"Not connecting any more input ports, sticking with the ones that were connected.\n");
         break;
       }
@@ -321,12 +322,12 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
     // Find possible input server port names
     serverports_names = jack_get_ports (jack_client, NULL, NULL, JackPortIsPhysical|JackPortIsInput);
     if (serverports_names == NULL) {
-      printf("No available physical playback (server input) ports.\n");
+      RCLCPP_ERROR(rosjack_node->get_logger(),"No available physical playback (server input) ports.");
       return 1;
     }
     // Connect the first available to our output port
     if (jack_connect (jack_client, jack_port_name (jack_output_port), serverports_names[0])) {
-      printf("Cannot connect output port.\n");
+      RCLCPP_ERROR(rosjack_node->get_logger(),"Cannot connect output port.");
       return 1;
     }
     // free serverports_names variable for reuse in next part of the code
@@ -335,11 +336,22 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
   
   
   if(rosjack_type == ROSJACK_WRITE){
-    rosjack_in = rosjack_node->create_subscription<jack_msgs::msg::JackAudio>(topic_name, 1000, rosjack_roscallback);
+    rosjack_in = rosjack_node->create_subscription<jack_msgs::msg::JackAudio>(topic_name, 1000,
+      [rosjack_node, topic_name](const jack_msgs::msg::JackAudio::SharedPtr msg) {
+          rosjack_roscallback(msg);
+        }
+    );
+    
+    // if using any of the below alternatives
+    //   makes sure to change the type of msg in rosjack_roscallback to just "jack_msgs::msg::JackAudio"
+    //   instead of "jack_msgs::msg::JackAudio::::SharedPtr"
+    //   in both rosjack.cpp and rosjack.hpp
+    
+    //rosjack_in = rosjack_node->create_subscription<jack_msgs::msg::JackAudio>(topic_name, 1000, rosjack_roscallback);
     //rosjack_in = rosjack_node->create_subscription<jack_msgs::msg::JackAudio>(topic_name, 1000, std::bind(&rosjack_roscallback, rosjack_node, std::placeholders::_1));
   }
   
-  printf ("done.\n");
+  RCLCPP_INFO(rosjack_node->get_logger(),"done.");
   return 0;
 }
 
@@ -621,14 +633,15 @@ rosjack_data ** input_from_rosjack (unsigned int data_length){
   return data;
 }
 
-void rosjack_roscallback(const jack_msgs::msg::JackAudio msg){
-  int msg_size = msg.size;
+void rosjack_roscallback(const jack_msgs::msg::JackAudio::SharedPtr msg){
+  int msg_size = msg->size;
   
   jack_mtx.lock();
   for (int i = 0; i < msg_size; i++){
-    ros2jack_buffer[ros2jack_buffer_size_w] = msg.data[i];
+    ros2jack_buffer[ros2jack_buffer_size_w] = msg->data[i];
+    
     ros2jack_buffer_size_w++;
-    if(ros2jack_buffer_size_w > ros2jack_buffer_size)
+    if(ros2jack_buffer_size_w >= ros2jack_buffer_size)
       ros2jack_buffer_size_w = 0;
   }
   jack_mtx.unlock();
@@ -643,7 +656,7 @@ rosjack_data * input_from_ros2jack_buffer (unsigned int data_length){
     ros2jack_buffer[ros2jack_buffer_size_r] = 0.0;
     
     ros2jack_buffer_size_r++;
-    if(ros2jack_buffer_size_r > ros2jack_buffer_size)
+    if(ros2jack_buffer_size_r >= ros2jack_buffer_size)
       ros2jack_buffer_size_r = 0;
   }
   jack_mtx.unlock();

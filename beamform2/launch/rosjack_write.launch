@@ -1,0 +1,11 @@
+<launch>
+  <node pkg="beamform2" name="beamform2" exec="rosjack_write" output="screen">
+    <param from="$(find-pkg-share beamform2)/config/beamform_config.yaml" />
+    <param name="auto_connect" value="false" />
+    <param name="output_type" value="1" />
+    <param name="write_file" value="true" />
+    <param name="write_file_path" value="" />
+    <param name="write_xrun" value="false" />
+    <param name="ros_output_sample_rate" value="16000" />
+  </node>
+</launch>
