@@ -16,7 +16,7 @@ int main (int argc, char *argv[]) {
   std::shared_ptr<rclcpp::Node> rosjack_node = rclcpp::Node::make_shared("rosjack_write");
   
   /* create JACK agent */
-  if(rosjack_create (ROSJACK_WRITE, rosjack_node, "jackaudio", rosjack_node->get_name(), 0, jack_callback)){
+  if(rosjack_create (ROSJACK_WRITE, rosjack_node, "jackaudio_filtered", rosjack_node->get_name(), 0, jack_callback)){
     RCLCPP_ERROR(rosjack_node->get_logger(),"JACK agent could not be created.\n");
     rclcpp::shutdown();
     exit(1);
