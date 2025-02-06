@@ -122,13 +122,17 @@ void rosjack_handle_params(std::shared_ptr<rclcpp::Node> rosjack_node){
   }
   
   if (rosjack_node->get_parameter("ros_output_sample_rate",ros_output_sample_rate)){
-    RCLCPP_INFO(rosjack_node->get_logger(),"ROS Output Sample Rate: %d",ros_output_sample_rate);
-    ros_output_sample_rate_defined = true;
+    if (ros_output_sample_rate != 0){
+      RCLCPP_INFO(rosjack_node->get_logger(),"ROS Output Sample Rate: %d",ros_output_sample_rate);
+      ros_output_sample_rate_defined = true;
+    }else{
+      ros_output_sample_rate_defined = false;
+      RCLCPP_WARN(rosjack_node->get_logger(),"ROS Output Sample Rate argument not defined in ROS param server, using JACK sample rate.");
+    }
   }else{
     ros_output_sample_rate_defined = false;
     RCLCPP_WARN(rosjack_node->get_logger(),"ROS Output Sample Rate argument not found in ROS param server, using JACK sample rate.");
   }
-  
 }
 
 void jack_shutdown (void *arg){
@@ -195,8 +199,10 @@ int rosjack_create (int rosjack_readwrite, std::shared_ptr<rclcpp::Node> rosjack
   rosjack_sample_rate = jack_get_sample_rate (jack_client);
   stamp_factor = (double)1000000000/rosjack_sample_rate;
   RCLCPP_INFO(rosjack_node->get_logger(),"JACK sample rate: %d", rosjack_sample_rate);
-  if(!ros_output_sample_rate_defined)
+  if(!ros_output_sample_rate_defined){
     ros_output_sample_rate = rosjack_sample_rate;
+    RCLCPP_INFO(rosjack_node->get_logger(),"ROS Output Sample Rate: %d",ros_output_sample_rate);
+  }
   
   
   /* create the agent input ports */
@@ -607,6 +613,7 @@ void output_to_rosjack (rosjack_data *data_out, unsigned int data_length){
       }break;
     }
   }
+  free(data_out);
 }
 
 rosjack_data ** input_from_rosjack (unsigned int data_length){
@@ -658,6 +665,7 @@ void rosjack_roscallback(const jack_msgs::msg::JackAudio::SharedPtr msg){
       }
       jack_mtx.unlock();
     }
+    free(data_out);
   }
   //printf("ROS -> samplerate_circbuff_w: %d, samplerate_circbuff_r: %d\n", samplerate_circbuff_w, samplerate_circbuff_r); fflush(stdout);
   //printf("ROS -> ros2jack_buffer_size_w: %d, ros2jack_buffer_size_r: %d\n", ros2jack_buffer_size_w, ros2jack_buffer_size_r); fflush(stdout);

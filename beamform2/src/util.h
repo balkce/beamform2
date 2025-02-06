@@ -343,6 +343,9 @@ void do_overlap(rosjack_data **in, rosjack_data *out, jack_nframes_t nframes, vo
     out_buff_switch_tmp = out_buff[0];
     out_buff[0] = out_buff[1];
     out_buff[1] = out_buff_switch_tmp;
+    
+    //freeing memory
+    free(in);
 }
 
 //fft_win is assinged here
@@ -410,6 +413,9 @@ void do_overlap_bymic(rosjack_data **in, rosjack_data **out, jack_nframes_t nfra
         // advance ring buffer read pointer nframes
         jack_ringbuffer_read_advance(in_buff[i],bytes_nframes);
     }
+    
+    //freeing memory
+    free(in);
 }
 //fft_win is assinged here
 //run before allocating buffers any other buffers
@@ -490,6 +496,9 @@ void do_overlap_multi(rosjack_data **in, rosjack_data **out, jack_nframes_t nfra
         out_buff_mic[i][0] = out_buff_mic[i][1];
         out_buff_mic[i][1] = out_buff_switch_tmp;
     }
+    
+    //freeing memory
+    free(in);
 }
 
 //Sleep function in milliseconds
