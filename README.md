@@ -49,6 +49,7 @@ Packages that can be installed trough apt official repositories:
 * libeigen3-dev: lightweight linear algebra library
 * libsndfile1-dev: library to read and write audio files
 * libsamplerate0-dev: library for sample rate conversion
+* libomp-dev: library for parallelization
 
 ## References
 Some useful references:

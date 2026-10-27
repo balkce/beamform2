@@ -1,6 +1,26 @@
 cmake_minimum_required(VERSION 3.8)
 project(beamform2)
 
+#foxy does not have this function, adding it here
+#this was copy pasted from https://github.com/ros2/rosidl/blob/rolling/rosidl_cmake/cmake/rosidl_get_typesupport_target.cmake
+#may need to be commented if compiling with humble
+function(rosidl_get_typesupport_target var generate_interfaces_target typesupport_name)
+  if(NOT TARGET ${generate_interfaces_target})
+    message(FATAL_ERROR
+      "${generate_interfaces_target} is not a CMake target. Maybe rosidl_generate_interfaces was given a different target name?")
+  endif()
+
+  set(output_target "${generate_interfaces_target}__${typesupport_name}")
+
+  if(NOT TARGET ${output_target})
+    # CMake if() evaluates strings ending in `-NOTFOUND` as false
+    set(output_target "${output_target}-NOTFOUND")
+  endif()
+
+  set("${var}" "${output_target}" PARENT_SCOPE)
+endfunction()
+
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic -Wno-unused-parameter)
 endif()
@@ -10,6 +30,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(jack_msgs REQUIRED)
 find_package(rosjack REQUIRED)
+find_package(OpenMP REQUIRED)
 
 find_package(rosidl_default_generators REQUIRED)
 
@@ -56,6 +77,7 @@ add_executable(mvdr src/mvdr.cpp)
 ament_target_dependencies(mvdr ${dependencies})
 target_link_libraries(mvdr
   ${FFTW_LIBRARIES}
+  OpenMP::OpenMP_CXX
 )
 
 add_executable(gsc src/gsc.cpp)
