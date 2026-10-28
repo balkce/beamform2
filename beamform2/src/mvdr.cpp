@@ -173,7 +173,7 @@ void theta_roscallback(const std_msgs::msg::Float32::SharedPtr msg){
     update_weights();
 }
 
-void phase_handle_params(std::shared_ptr<rclcpp::Node> n){
+void mvdr_handle_params(std::shared_ptr<rclcpp::Node> n){
     std::cout << "MVDR ROS parameters: " << std::endl;
     
     n->declare_parameter("past_windows",10);
@@ -229,9 +229,9 @@ void phase_handle_params(std::shared_ptr<rclcpp::Node> n){
 int main (int argc, char *argv[]) {
     /* ROS initialization*/
     rclcpp::init(argc, argv);
-    std::shared_ptr<rclcpp::Node> rosjack_node = rclcpp::Node::make_shared("beamformphase");
+    std::shared_ptr<rclcpp::Node> rosjack_node = rclcpp::Node::make_shared("beamform2");
     handle_params(rosjack_node);
-    phase_handle_params(rosjack_node);
+    mvdr_handle_params(rosjack_node);
     
     const char *topic_name = "theta";
     rclcpp::Subscription<std_msgs::msg::Float32>::SharedPtr theta_subscriber = rosjack_node->create_subscription<std_msgs::msg::Float32>(topic_name, 1000,
